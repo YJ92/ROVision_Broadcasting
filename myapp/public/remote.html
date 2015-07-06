@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>ROVision Broadcasting</title>
+	<link rel="stylesheet" href="bootstrap/css/bootstrap.min.css" media="screen">
+	<style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 25px;
+      }
+      .left-side {
+        padding: 12px;
+      }
+      .bottom-side{
+      	margin-top: -20px;
+      }
+      .right-side{
+      	padding-right : 15px;
+      }
+
+      @media (max-width: 980px) {
+        /* Enable use of floated navbar text */
+        .navbar-text.pull-right {
+          float: none;
+          padding-left: 5px;
+          padding-right: 5px;
+        }
+      }
+		video {
+			max-height: 570px;
+			max-width: 100%;
+		}
+	</style>
+	<link rel="stylesheet" href="bootstrap/css/bootstrap-responsive.min.css">
+	<script src="javascripts/extra/adapter.js" type="text/javascript"></script>
+	<script src="javascripts/getScreenId.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script>
+		var socket = io();
+	</script>
+</head>
+<body onbeforeunload="disconnect(false);">
+	<!-- Navigation bar -->
+	<div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="#">ROVision-broadcasting</a>
+          <div class="nav-collapse collapse">
+            <p class="navbar-text pull-right">
+              Logged at <a href="#" class="navbar-link id-display">Anonymous</a>
+            </p>
+            <ul class="nav">
+              <li><a href="#" onclick="disconnect(true);">Return to Home</a></li>
+              <li><a href="#about">About</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+	<!-- Container -->
+	<div class="container-fulid">
+		<div class="row-fluid">
+			<div class="span9 left-side">
+				<div class="hero-unit">
+					<p class="text-center">
+						<video autoplay controls poster="/images/off_air.jpg"></video>	
+					</p>
+				</div>
+			</div>
+			
+			<!-- User list -->
+			<div class="span3 right-side">
+				<button class="btn btn-large btn-block btn-inverse local-user">Local User</button>
+				<button class="btn btn-large btn-block btn-inverse remote-user">Remote User</button>
+			</div>		
+		</div>
+	</div>
+
+	<!-- Script include -->
+	<script src="javascripts/jquery-1.11.3.min.js"></script>
+	<script src="bootstrap/js/bootstrap.min.js"></script>
+
+	<script>
+		var remote_id = null;
+		var local_id = null;
+		var accept_connect = false;
+
+		window.onload = function(){
+			// Get url parameter
+			var getParameter = function (param) {
+	    	var returnValue;
+	    	var url = location.href;
+	    	var parameters = (url.slice(url.indexOf('?') + 1, url.length)).split('&');
+	    	for (var i = 0; i < parameters.length; i++) {
+		        var varName = parameters[i].split('=')[0];
+		        if (varName.toUpperCase() == param.toUpperCase()) {
+		            returnValue = parameters[i].split('=')[1];
+		            return decodeURIComponent(returnValue);
+		        	}
+		    	}
+			};
+
+			local_id = getParameter('local_id');
+			$('.id-display').text(local_id);
+			remote_id = Date.now()+"-"+Math.round(Math.random()*10000);
+
+			var Send_data = {
+				local_id : local_id,
+				remote_id : remote_id
+			};
+			socket.emit('remote_user',Send_data);
+
+			var request_loop = setInterval(request_connection, 500);
+
+			function request_connection(){
+				Send_data = {
+					type : 'are-you-busy',
+					local_id : local_id,
+					remote_id : remote_id
+				}
+				console.log('Sending message!');
+				socket.emit('Message',Send_data);
+				if(accept_connect){
+					clearInterval(request_loop);
+					connect();
+				}
+			}
+
+		}
+
+
+	</script>
+
+	<script>	
+	   	var peerConn_remote = null;
+		var pc_config = null;
+
+	   	function connect(){
+	   		$(".local-user").after(generateUserButton('Local',local_id));
+	   		var Send_data = {
+	   			type : 'start',
+	   			local_id : local_id,
+	   			remote_id : remote_id
+	   		};
+            socket.emit('Message',Send_data);
+			peerConn_remote = new RTCPeerConnection(pc_config);
+			
+			peerConn_remote.onicecandidate = function(event){
+				if(event.candidate){
+					console.log('Send ICE candidate to Local peer');
+					var Send_data = {
+						type : "remote_sending_candidate",
+						local_id : local_id,
+						remote_id : remote_id,
+						sdpMLineIndex: event.candidate.sdpMLineIndex,
+						sdpMid : event.candidate.sdpMid,
+						candidate : event.candidate.candidate
+					};
+					socket.emit('Message',Send_data);
+				}
+			};
+			peerConn_remote.onaddstream = function(event){
+				document.querySelector('video').src = URL.createObjectURL(event.stream);
+				console.log('Received remote stream');
+			};
+    	}
+
+	   	function setRemoteAndSendMessage(sessionDescription){
+				console.log("Answer from RemotePeer");
+				peerConn_remote.setLocalDescription(sessionDescription);
+				var Send_data = {
+			        type : sessionDescription.type,
+			        sdp : sessionDescription.sdp,
+			        remote_id : remote_id,
+			        local_id : local_id
+			      }
+				socket.emit('Message',Send_data);
+			}
+
+
+		function disconnect(state){
+			if(peerConn_remote != null){
+				peerCoon_remote = null;
+				var Send_data = {
+					type : "disconnect",
+					local_id : local_id,
+					remote_id : remote_id
+				};
+
+				socket.emit('Message',Send_data);
+			}
+			if(state)
+				window.location.replace("/");
+		}
+
+		function generateUserButton(state, id){
+        if(state == "Local")
+       		var button = '<button class="btn btn-large btn-warning btn-block user-element" href="#"><i class="icon-user"></i> '+state+' &raquo; '+id+'</button>';
+        else if(id == remote_id)
+        	var button = '<button class="btn btn-large btn-success btn-block user-element remote-peer" href="#"><i class="icon-user"></i> '+state+' &raquo; '+id+'</button>';	
+        else
+          	var button = '<button class="btn btn-large btn-warning btn-block user-element remote-peer" href="#"><i class="icon-user"></i> '+state+' &raquo; '+id+'</button>';
+
+       		return button;
+       }
+		// Socket.io
+			
+		socket.on('Message',function(data){
+   		if(data.type == 'offer' && remote_id == data.remote_id){
+   			var sessionDescription = new RTCSessionDescription({sdp : data.sdp, type : data.type});
+   			peerConn_remote.setRemoteDescription(sessionDescription);
+			peerConn_remote.createAnswer(setRemoteAndSendMessage);
+   		}else if(data.type == "local_sending_candidate" && remote_id == data.remote_id){
+			var candidate = new RTCIceCandidate({sdpMLineIndex: data.sdpMLineIndex, sdpMid: data.sdpMid, candidate: data.candidate});
+			peerConn_remote.addIceCandidate(candidate);
+		}else if(data == 'stop' && peerConn_remote != null){
+			console.log('Received stop');
+			document.querySelector('video').src = null;
+			peerConn_remote.close();
+			peerConn_remote = null;
+
+			alert("Local user disconnected!");
+			window.location.replace("/");
+		}else if(data.type == "accept_connect" && data.remote_id == remote_id){
+			accept_connect = true;
+		}else if(data.type == "update_user"){
+            $('.remote-peer').remove();
+            for(var i=0;i<data.remote_id_list.length;i++)
+              $(".remote-user").after(generateUserButton('Remote',data.remote_id_list[i]));
+        }
+   	});
+
+	</script>
+</body>
+</html>

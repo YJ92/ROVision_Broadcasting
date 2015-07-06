@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>ROVision Broadcasting</title>
+	<link rel="stylesheet" href="bootstrap/css/bootstrap.min.css" media="screen">
+	<style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 25px;
+      }
+      .left-side {
+        padding: 12px;
+      }
+      .bottom-side{
+      	margin-top: -20px;
+      }
+      .right-side{
+      	padding-right : 15px;
+      }
+
+      @media (max-width: 980px) {
+        /* Enable use of floated navbar text */
+        .navbar-text.pull-right {
+          float: none;
+          padding-left: 5px;
+          padding-right: 5px;
+        }
+      }
+		video {
+			max-height: 570px;
+			max-width: 100%;
+		}
+	</style>
+	<link rel="stylesheet" href="bootstrap/css/bootstrap-responsive.min.css">
+	<script src="javascripts/extra/adapter.js" type="text/javascript"></script>
+	<script src="javascripts/getScreenId.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script>
+		var socket = io();
+	</script>
+</head>
+<body onbeforeunload="disconnect(false);">
+	<!-- Navigation bar -->
+	<div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="#">ROVision-broadcasting</a>
+          <div class="nav-collapse collapse">
+            <p class="navbar-text pull-right">
+              Logged in as <a href="#" class="navbar-link id-display">Anonymous</a>
+            </p>
+            <ul class="nav">
+              <li><a href="#myModal1" role="button" data-toggle="modal">Return to Home</a></li>
+              <li><a href="#about">About</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+    <!-- Modal -->
+    <div id="myModal1" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h3 id="myModalLabel">Warning</h3>
+      </div>
+      <div class="modal-body">
+        <h4>연결을 끊고 나가시겠습니까?</h4>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" data-dismiss="modal">Cancel</button>
+        <a class="btn btn-primary" data-dismiss="modal" onclick="disconnect(true);">Return to Home</a>
+      </div>
+    </div>
+    <!-- Modal End -->
+	<!-- Container -->
+	<div class="container-fulid">
+		<div class="row-fluid">
+			<div class="span9 left-side">
+				<div class="hero-unit">
+					<p class="text-center">
+						<video autoplay controls poster="/images/off_air.jpg"></video>	
+					</p>
+				</div>
+				<div class="row-fluid bottom-side">
+					<div class="span4">
+						<h2>Step 1</h2>
+						<p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui.</p>
+						<p class="text-center"><button type="button" class="btn btn-inverse startVideo" onclick="startVideo();">Get Video Stream &raquo;</button></p>
+					</div>
+					<div class="span4">
+						<h2>Step 2</h2>
+						<p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui.</p>
+						<p class="text-center"><button type="button" class="btn btn-inverse disabled connect" onclick="makeRoom();" disabled="true">Open Broadcasting &raquo;</button></p>
+					</div>
+					<div class="span4">
+						<h2>Step 3</h2>
+						<p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui.</p>
+						<p class="text-center">
+              <a href="#myModal2" role="button" class="btn btn-inverse disabled disconnect" disabled="true" data-toggle="modal">Close Broadcasting &raquo;</a>
+              <!-- Modal -->
+              <div id="myModal2" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-header">
+                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                  <h3 id="myModalLabel">Warning</h3>
+                </div>
+                <div class="modal-body">
+                  <h4>연결을 끊으시겠습니까?</h4>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn" data-dismiss="modal">Cancel</button>
+                  <button class="btn btn-primary" data-dismiss="modal" onclick="disconnect(false);">Close Broadcasting</button>
+                </div>
+              </div>
+              <!-- Modal End -->
+            </p>
+					</div>
+				</div>
+			</div>
+			
+			<!-- User list -->
+			<div class="span3 right-side">
+				<button class="btn btn-large btn-block btn-inverse local-user">Local User</button>
+				<button class="btn btn-large btn-block btn-inverse remote-user">Remote User</button>
+			</div>		
+		</div>
+	</div>
+
+
+
+	<!-- Script include -->
+	<script src="javascripts/jquery-1.11.3.min.js"></script>
+	<script src="bootstrap/js/bootstrap.min.js"></script>
+
+	<script>
+		var local_id = null;
+		var myVideoStream = null;
+
+		function startVideo(){
+                    
+           getScreenId(function(error, sourceId, screen_constraints) {
+               // error    == null || 'permission-denied' || 'not-installed' || 'installed-disabled' || 'not-chrome'
+               // sourceId == null || 'string' || 'firefox'
+               // getUserMedia(screen_constraints, onSuccess, onFailure);              
+               getUserMedia(screen_constraints, function(stream) {
+               	myVideoStream = stream;
+                   document.querySelector('video').src = URL.createObjectURL(stream);
+                   $('.startVideo').addClass('disabled').attr("disabled",true);
+                   $('.connect').removeClass('disabled').attr("disabled",false);
+
+                   stream.onended = function() {
+                       document.querySelector('video').src = null;
+                       $('.startVideo').removeClass('disabled').attr("disabled",false);
+                       $('.connect').addClass('disabled').attr("disabled",true);
+                       $('.disconnect').addClass('disabled').attr("disabled",true);
+                       local_id = null;
+                       $('.id-display').text('Anonymous');
+                   };
+               }, function(error) {
+                   alert(JSON.stringify(error, null, '\t'));
+               });
+           });
+       }
+
+       function makeRoom(){
+       		local_id = Date.now()+"-"+Math.round(Math.random()*10000);
+       		console.log('my id : ' + local_id);
+       		socket.emit('makeRoom',local_id);
+       }
+
+       socket.on('makeRoom',function(data){
+       		$('.connect').addClass('disabled').attr("disabled",true);
+       		$('.disconnect').removeClass('disabled').attr("disabled",false);
+
+       		$('.id-display').text(data);
+       		$(".local-user").after(generateUserButton('Local',data));
+
+       });
+
+       function generateUserButton(state, id){
+        if(state == "Local")
+       		var button = '<button class="btn btn-large btn-success btn-block user-element" href="#"><i class="icon-user"></i> '+state+' &raquo; '+id+'</button>';
+        else
+          var button = '<button class="btn btn-large btn-warning btn-block user-element remote-peer" href="#"><i class="icon-user"></i> '+state+' &raquo; '+id+'</button>';
+
+       		return button;
+       }
+
+       function disconnect(state){
+        if(myVideoStream !=null){
+       		myVideoStream.stop();
+			$('.startVideo').removeClass('disabled').attr("disabled",false);
+			$('.disconnect').addClass('disabled').attr("disabled",true);
+			$('.user-element').remove();
+			
+			socket.emit('dis_connect',local_id);
+    }
+
+      if(state)
+        window.location.replace("/");
+       }
+	</script>
+
+  <script>
+       var peerConn_local = null;
+       var remote_id = null;
+       var pc_config = null;
+
+       var busy_state = false;
+       var accept_id = null;
+
+       var LocalPeer_list = [];
+       
+
+        socket.on('Message',function(data){           
+          if(data.type == "start"){
+
+            peerConn_local = new RTCPeerConnection(pc_config);
+            remote_id = data.remote_id;
+
+            LocalPeer_list.push({peerConn_local : peerConn_local, remote_id : remote_id});
+
+            var remote_id_list = [];
+              for(var i=0;i<LocalPeer_list.length;i++)
+                remote_id_list.push(LocalPeer_list[i].remote_id);
+
+              var Send_data = {
+                type : 'update_user',
+                local_id : local_id,
+                remote_id_list : remote_id_list
+              }
+              socket.emit('Message',Send_data);
+/*
+            peerConn_local.onicecandidate = function(event){
+            if(event.candidate){
+              console.log('Send ICE candidate to Remote peer');
+              var Send_data = {
+                type : "local_sending_candidate",
+                remote_id : remote_id,
+                local_id : local_id,
+                sdpMLineIndex: event.candidate.sdpMLineIndex,
+                sdpMid : event.candidate.sdpMid,
+                candidate : event.candidate.candidate
+              };
+              socket.emit('Message',Send_data);
+          }
+        }*/
+            peerConn_local.addStream(myVideoStream);
+            console.log("Add localStream to localPeerConnection");
+
+            peerConn_local.createOffer(setLocalAndSendMessage);
+
+          }else if(data.type == "answer"){
+            var sessionDescription = new RTCSessionDescription({sdp : data.sdp, type : data.type});
+            peerConn_local.setRemoteDescription(sessionDescription);
+          }else if(data.type == "remote_sending_candidate"){
+            var candidate = new RTCIceCandidate({sdpMLineIndex: data.sdpMLineIndex, sdpMid: data.sdpMid, candidate: data.candidate});
+            peerConn_local.addIceCandidate(candidate,sucessConnection, failConnection);
+          }else if(data.type == "are-you-busy"){
+            if(busy_state == false){
+              busy_state = true;
+              data.type = "accept_connect";
+              socket.emit('Message',data);
+            }
+          }else if(data == "stop" && LocalPeer_list.length != 0){
+              for(var i=0;i<LocalPeer_list.length;i++)
+                LocalPeer_list[i].peerConn_local.close();
+              LocalPeer_list = [];
+              busy_state = false;
+          }else if(data.type == "disconnect"){
+            var delete_id_num = FindDeletingId(data.remote_id);
+            if(delete_id_num != null){
+              LocalPeer_list[delete_id_num].peerConn_local.close();
+              LocalPeer_list.splice(delete_id_num,1);
+
+              var remote_id_list = [];
+              for(var i=0;i<LocalPeer_list.length;i++)
+                remote_id_list.push(LocalPeer_list[i].remote_id);
+
+              var Send_data = {
+                type : 'update_user',
+                local_id : local_id,
+                remote_id_list : remote_id_list
+              }
+              socket.emit('Message',Send_data);
+            }
+          }else if(data.type == "update_user"){
+            $('.remote-peer').remove();
+            for(var i=0;i<data.remote_id_list.length;i++)
+              $(".remote-user").after(generateUserButton('Remote',data.remote_id_list[i]));
+          }
+       });
+
+        function FindDeletingId(id){
+          if(LocalPeer_list.length != 0){
+            for(var i=0;i<LocalPeer_list.length;i++)
+              if(LocalPeer_list[i].remote_id == id)
+                return i;
+          }
+
+          return null;
+        }
+
+        function sucessConnection(){
+          console.log('Sucess!');
+          busy_state = false;
+        }
+
+        function failConnection(err){
+          console.log('Fail!');
+        }
+
+        function setLocalAndSendMessage(sessionDescription){
+      console.log("Offer from localPeer");
+      peerConn_local.setLocalDescription(sessionDescription);
+      var Send_data = {
+        type : sessionDescription.type,
+        sdp : sessionDescription.sdp,
+        remote_id : remote_id,
+        local_id : local_id
+      }
+      socket.emit('Message',Send_data);
+    };
+  </script>
+</body>
+</html>
