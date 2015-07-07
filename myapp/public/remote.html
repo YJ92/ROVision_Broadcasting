@@ -91,6 +91,7 @@
 		var remote_id = null;
 		var local_id = null;
 		var accept_connect = false;
+		var attempt_time = 0;
 
 		window.onload = function(){
 			// Get url parameter
@@ -120,6 +121,9 @@
 			var request_loop = setInterval(request_connection, 500);
 
 			function request_connection(){
+				attempt_time = attempt_time + 1;
+				if(attempt_time == 20)
+					disconnect(false);
 				Send_data = {
 					type : 'are-you-busy',
 					local_id : local_id,

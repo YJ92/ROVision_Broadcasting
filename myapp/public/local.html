@@ -155,9 +155,7 @@
 
                    stream.onended = function() {
                        document.querySelector('video').src = null;
-                       $('.startVideo').removeClass('disabled').attr("disabled",false);
-                       $('.connect').addClass('disabled').attr("disabled",true);
-                       $('.disconnect').addClass('disabled').attr("disabled",true);
+                       disconnect(false);
                        local_id = null;
                        $('.id-display').text('Anonymous');
                    };
