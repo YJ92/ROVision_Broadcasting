@@ -140,7 +140,17 @@
 
 	<script>	
 	   	var peerConn_remote = null;
-		var pc_config = null;
+       var pc_config = {
+  'iceServers': [
+    {
+      'url': 'stun:stun.l.google.com:19302'
+    },
+    {
+      'url': 'turn:ROVision_Broadcasting@54.92.2.154',
+      'credential' : '1q3w2e4'
+    }
+ ]
+};
 
 	   	function connect(){
 	   		$(".local-user").after(generateUserButton('Local',local_id));

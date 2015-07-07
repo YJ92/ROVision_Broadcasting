@@ -6,7 +6,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var fs = require('fs');
 var https = require('https');
-
+var http = require('http');
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
@@ -70,9 +70,12 @@ var options = {
     cert: fs.readFileSync('fake-keys/certificate.pem')
 };
 
-var server = https.createServer(options, app).listen('3030', function(){
-  console.log("Secure Express server listening on port 3030");
+var server = https.createServer(options, app).listen('443', function(){
+  console.log("Secure Express server listening on port 443");
 });
+//var server = http.createServer(app).listen(80,function(){
+//	console.log("Server is running");
+//});
 
 // Socket io
 

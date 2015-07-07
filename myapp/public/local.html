@@ -209,7 +209,14 @@
   <script>
        var peerConn_local = null;
        var remote_id = null;
-       var pc_config = null;
+       var pc_config = {
+	'iceServers': [{
+		'url' : 'stun:stun.l.google.com:19302'
+	},{
+		'url' : 'turn:ROVision_Broadcasting@54.92.2.154',
+		'credential' : '1q3w2e4'
+	}]	
+};
 
        var busy_state = false;
        var accept_id = null;
@@ -235,7 +242,7 @@
                 remote_id_list : remote_id_list
               }
               socket.emit('Message',Send_data);
-/*
+
             peerConn_local.onicecandidate = function(event){
             if(event.candidate){
               console.log('Send ICE candidate to Remote peer');
@@ -249,7 +256,7 @@
               };
               socket.emit('Message',Send_data);
           }
-        }*/
+        }
             peerConn_local.addStream(myVideoStream);
             console.log("Add localStream to localPeerConnection");
 
