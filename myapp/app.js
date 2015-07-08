@@ -66,8 +66,9 @@ module.exports = app;
 
 // https
 var options = {
-    key: fs.readFileSync('fake-keys/privatekey.pem'),
-    cert: fs.readFileSync('fake-keys/certificate.pem')
+    key: fs.readFileSync('/cert/ssl.key'),
+    cert: fs.readFileSync('/cert/ssl.crt'),
+    ca : fs.readFileSync('/cert/sub.class1.server.ca.pem')
 };
 
 var server = https.createServer(options, app).listen('443', function(){
