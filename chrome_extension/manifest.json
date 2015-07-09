@@ -7,7 +7,7 @@
 	},
 	"background" : {
 		"scripts" : ["js/adapter.js","js/socket.io.js","js/background.js"],
-		"persistent" : false
+		"persistent" : true
 	},
 	"permissions": [
 		"activeTab",

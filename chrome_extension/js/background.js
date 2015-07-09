@@ -1,10 +1,10 @@
 // winodw on load
 window.onload = function(){
-  localStorage["capturing"] = "off";
+  localStorage["capturing_my_tab"] = "off";
 }
 
 
-var socket = socket = io.connect("https://rovision.openlabs.kr");
+var socket = socket = io.connect("https://rovision.openlabs.kr:443");
 var send_data = null;
 var myVideoStream = null;
 
@@ -30,7 +30,7 @@ var LocalPeer_list = [];
 // On click
 
 chrome.browserAction.onClicked.addListener(function(tab){
-  var currentMode = localStorage["capturing"];
+  var currentMode = localStorage["capturing_my_tab"];
 
   // toggle the button
   var newMode = currentMode === "on" ? "off" : "on";
@@ -69,7 +69,7 @@ chrome.browserAction.onClicked.addListener(function(tab){
       });
     });    
   // stop capture
-  }else {
+  }else if(newMode === "off"){
     myVideoStream.stop();
   }
 
@@ -77,7 +77,7 @@ chrome.browserAction.onClicked.addListener(function(tab){
   var iconCapture = "img/tabCapture22.png";
   var iconPause = "img/pause22.png";
 
-  localStorage["capturing"] = newMode;
+  localStorage["capturing_my_tab"] = newMode;
   var iconFilePath = newMode === "on" ? iconPause : iconCapture;
   chrome.browserAction.setIcon({path: iconFilePath});
 	
