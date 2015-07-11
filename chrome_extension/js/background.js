@@ -1,9 +1,16 @@
 // winodw on load
+chrome.contextMenus.create({
+  "title" : "Broadcast this video",
+  "onclick" : clickHandler,
+  "id" : "screen_capturing"
+});
+
+
 window.onload = function(){
   localStorage["capturing_my_tab"] = "off";
 }
 
-
+// WebRTC
 var socket = socket = io.connect("https://rovision.openlabs.kr:443");
 var send_data = null;
 var myVideoStream = null;
@@ -28,8 +35,7 @@ var media_constraint = null;
 var LocalPeer_list = [];
 
 // On click
-
-chrome.browserAction.onClicked.addListener(function(tab){
+function clickHandler(){
   var currentMode = localStorage["capturing_my_tab"];
 
   // toggle the button
@@ -73,15 +79,16 @@ chrome.browserAction.onClicked.addListener(function(tab){
     myVideoStream.stop();
   }
 
-  // Change icon
-  var iconCapture = "img/tabCapture22.png";
-  var iconPause = "img/pause22.png";
+  // Change state
 
   localStorage["capturing_my_tab"] = newMode;
-  var iconFilePath = newMode === "on" ? iconPause : iconCapture;
-  chrome.browserAction.setIcon({path: iconFilePath});
+  var title = newMode === "on" ? "Stop broadcasting" : "Broadcast this video";
+  chrome.contextMenus.update("screen_capturing",{
+    "title" : title,
+    "onclick" : clickHandler
+  });
 	
-});
+};
 
 
 // Socket zone ==========================================================================//
