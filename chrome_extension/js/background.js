@@ -70,6 +70,11 @@ function clickHandler(){
 
         stream.onended = function(){
           disconnect();
+          localStorage["capturing_my_tab"] = "off";
+          chrome.contextMenus.update("screen_capturing",{
+            "title" : "Broadcast this video",
+            "onclick" : clickHandler
+          });
           local_id = null;
         }
       });
